@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { gql, useMutation } from "urql";
 
 interface Props {
@@ -19,17 +19,19 @@ const LoginForm = ({ onLoginSuccess }: Props) => {
   const [password, setPassword] = useState<string>("");
 
   const [signinResult, signin] = useMutation(LOGIN_MUTATION);
-
-  const onSubmit = (e) => {
+  
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (email && password) {
-      signin({ signininput: { email, password } })
-        .then((result) => {
-          if (!result.error && result.data && result.data.signin) {
-            onLoginSuccess(result.data.signin);
-          }
-        })
-        .catch((err) => console.error(err));
+      try {
+        const result = await signin({ signininput: { email, password } });
+        console.info(result.error);
+        if (!result.error && result.data && result.data.signin) {
+          onLoginSuccess(result.data.signin);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
   return (
@@ -51,7 +53,7 @@ const LoginForm = ({ onLoginSuccess }: Props) => {
                   htmlFor="email"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
-                  Your email {email}
+                  Your email
                 </label>
                 <input
                   type="email"
@@ -69,7 +71,7 @@ const LoginForm = ({ onLoginSuccess }: Props) => {
                   htmlFor="password"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
-                  Password {password}
+                  Password
                 </label>
                 <input
                   type="password"

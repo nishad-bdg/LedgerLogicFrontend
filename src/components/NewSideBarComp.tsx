@@ -5,9 +5,9 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useMutation } from "urql";
 import { LOGOUT_MUTATION } from "../gql/mutations";
-import { useRouter } from "next/router";
 import { clearStorage, getToken } from "../store/authStore";
 import { parseJwt } from "../utils/decodeToken";
+import { useRouter } from "next/router";
 
 const SideBarComp = () => {
   const [isMenueOpen, setMenu] = useState(false);
@@ -19,13 +19,12 @@ const SideBarComp = () => {
     const headers = { Authorization: `Bearer ${accessToken}` };
 
     if (decodedToken) {
-      userLogout({ userId: decodedToken.userId }, { headers }).then(
-        (result) => {
-          console.info(result);
-          clearStorage();
-          location.reload();
-        }
-      );
+      try {
+        userLogout({ userId: decodedToken.userId }, { headers });
+        clearStorage();
+        router.push("/");
+        location.reload();
+      } catch (_) {}
     }
   };
   return (
@@ -61,7 +60,7 @@ const SideBarComp = () => {
               </li>
               <li>
                 <Link
-                  href="./Customers"
+                  href="./customers"
                   className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <span className="ms-3">Customer Info</span>
@@ -83,13 +82,11 @@ const SideBarComp = () => {
                   <span className="ms-3">Account</span>
                 </Link>
               </li>
-              <li onClick={logout}>
-                <Link
-                  href="#"
-                  className="flex items-center p-2 text-red-900 rounded-lg dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <span className="ms-3">Logout</span>
-                </Link>
+              <li
+                onClick={logout}
+                className="flex items-center p-2 text-red-900 rounded-lg dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 group cursor-pointer"
+              >
+                <span className="ms-3">Logout</span>
               </li>
             </ul>
           </div>
@@ -128,7 +125,7 @@ const SideBarComp = () => {
             </li>
             <li>
               <Link
-                href="./Customers"
+                href="./customers"
                 className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
               >
                 <span className="ms-3">Customer Info</span>
@@ -150,9 +147,10 @@ const SideBarComp = () => {
                 <span className="ms-3">Account</span>
               </Link>
             </li>
-            <li>
+            <li onClick={logout}>
               <a
-                href="./login"
+                href="#"
+                onClick={logout}
                 className="flex items-center p-2 text-red-900 rounded-lg dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 group"
               >
                 <span className="ms-3">Logout</span>
