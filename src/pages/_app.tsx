@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { AppProps } from 'next/app'
 import '../styles/index.css'
+import { Provider } from 'urql'
+import client from '../utils/client'
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -9,7 +11,9 @@ function MyApp({ Component, pageProps }: AppProps) {
         <title>NextJS TailwindCSS TypeScript Starter</title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
-      <Component {...pageProps} />
+      <Provider value={client}>
+        <Component {...pageProps} />
+      </Provider>
     </>
   )
 }

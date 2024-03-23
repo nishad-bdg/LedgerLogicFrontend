@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import SideBarComp from "../components/NewSideBarComp";
 import CustomerModalComp from "../components/CustomerModalComp";
+import useAuthMiddleware from "../middleware/authMiddleware";
 
 const Customers = () => {
   const [modal, setModal] = useState(false);
+
+  useAuthMiddleware();
 
   const toggleModal = () => {
     setModal(!modal);
