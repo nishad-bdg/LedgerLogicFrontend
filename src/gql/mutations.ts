@@ -7,3 +7,9 @@ export const LOGOUT_MUTATION = gql`
     }
   }
 `;
+
+export const CREATE_CUSTOMER_MUTATION = gql`
+  mutation CreateCustomer($customerInput: CreateCustomerInput!) {
+    createCustomer(customerInput: $customerInput)
+  }
+`;

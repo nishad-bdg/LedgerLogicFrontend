@@ -1,16 +1,127 @@
 import React, { useState } from "react";
-import SideBarComp from "../components/NewSideBarComp";
-import CustomerModalComp from "../components/CustomerModalComp";
 import useAuthMiddleware from "../middleware/authMiddleware";
+import SideBarComp from "../components/NewSideBarComp";
+import TextInput from "../components/inputs/TextInput";
+import dynamic from "next/dynamic";
+import Table from "../components/Table";
+import validateEmail from "../helpers/validateEmail";
+import { useMutation } from "urql";
+import { CREATE_CUSTOMER_MUTATION } from "../gql/mutations";
+import { getToken } from "../store/authStore";
+import { parseJwt } from "../utils/decodeToken";
+
+const Modal = dynamic(() => import("../components/Modal"));
+
+interface FormData {
+  customerName: string;
+  email: string;
+  mobileNo: string;
+  creditLimit: string;
+  isBlocked: boolean;
+}
 
 const Customers = () => {
-  const [modal, setModal] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const [createCustomerResult, createCustomer] = useMutation(
+    CREATE_CUSTOMER_MUTATION
+  );
 
   useAuthMiddleware();
 
   const toggleModal = () => {
-    setModal(!modal);
+    setIsOpen(true);
   };
+  const [formData, setFormData] = useState<FormData>({
+    customerName: "",
+    email: "",
+    mobileNo: "",
+    creditLimit: "0",
+    isBlocked: false,
+  });
+  const [formErrors, setFormErrors] = useState({
+    customerName: "",
+    email: "",
+    mobileNo: "",
+  });
+
+  const handleChange = (fieldName: string, value: string): void => {
+    setFormData({
+      ...formData,
+      [fieldName]: value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const errors = {
+      customerName: "",
+      email: "",
+      mobileNo: "",
+    };
+    let isValid = true;
+    if (!formData.customerName.trim()) {
+      errors.customerName = "Customer name is required";
+      isValid = false;
+    }
+
+    if (formData.customerName.length < 3) {
+      errors.customerName = "Customer name must have minimum 3 characters";
+      isValid = false;
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "email is required";
+      isValid = false;
+    }
+
+    if (!validateEmail(formData.email)) {
+      errors.email = "Please enter valid email";
+      isValid = false;
+    }
+
+    if (!formData.mobileNo.trim()) {
+      errors.mobileNo = "Mobile is required";
+      isValid = false;
+    }
+
+    if (formData.mobileNo.length < 11) {
+      errors.mobileNo = "Mobile no must have 11 characters";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+
+    if (isValid) {
+      setFormErrors({
+        customerName: "",
+        email: "",
+        mobileNo: "",
+      });
+      const accessToken = getToken();
+
+      const headers = { Authorization: `Bearer ${accessToken}` };
+      try {
+        const result = await createCustomer(
+          {
+            customerInput: {
+              customerName: formData.customerName,
+              email: formData.email,
+              mobileNo: Number(formData.mobileNo),
+              creditLimit: parseFloat(formData.creditLimit),
+              isBlocked: false,
+            },
+          },
+          { headers }
+        );
+        console.info("result", result);
+      } catch (err) {
+        console.error(err);
+      }
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className="p-4 md:ml-64">
       <SideBarComp />
@@ -25,74 +136,95 @@ const Customers = () => {
           </button>
         </div>
         {/* modal */}
-        <div>{modal && <CustomerModalComp />}</div>
+        {isOpen && (
+          <Modal
+            title="Create Customer"
+            isOpen={isOpen}
+            onClose={() => setIsOpen(false)}
+          >
+            <form onSubmit={handleSubmit}>
+              {/* customer name */}
+              <div className="m-3">
+                <TextInput
+                  label="Customer Name*"
+                  type="text"
+                  name="customerName"
+                  value={formData.customerName}
+                  placeholder="Customer Name"
+                  onChange={(value: string) =>
+                    handleChange("customerName", value)
+                  }
+                  minLength={3}
+                  required={!formData.customerName}
+                />
+                {formErrors.customerName && (
+                  <span className="text-red-500">
+                    {formErrors.customerName}
+                  </span>
+                )}
+              </div>
+              {/* customer name */}
+              {/* email */}
+              <div className="m-3">
+                <TextInput
+                  label="Email*"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(value: string) => handleChange("email", value)}
+                  placeholder="test@email.com"
+                  required
+                />
+                {formErrors.email && (
+                  <span className="text-red-500">{formErrors.email}</span>
+                )}
+              </div>
+              {/* email */}
 
-        <div className="flex flex-col items-center justify-center mb-4 rounded bg-gray-50 border-2 border-gray-200">
-          <table className="w-full text-sm text-left rtl:text-right text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3">
-                  Customer Name
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Product
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Date
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Due
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="bg-white border-b-800-700">
-                <th
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+              {/* mobile */}
+              <div className="m-3">
+                <TextInput
+                  label="Mobile No*"
+                  name="mobileNo"
+                  type="mobileNo"
+                  value={formData.mobileNo}
+                  onChange={(value: string) => handleChange("mobileNo", value)}
+                  placeholder="01**********"
+                  required
+                />
+                {formErrors.mobileNo && (
+                  <span className="text-red-500">{formErrors.mobileNo}</span>
+                )}
+              </div>
+              {/* mobile */}
+
+              {/* credit Limit */}
+              <div className="m-3">
+                <TextInput
+                  label="Credit Limit"
+                  name="creditLimit"
+                  type="creditLimit"
+                  value={formData.creditLimit}
+                  onChange={(value: string) =>
+                    handleChange("creditLimit", value)
+                  }
+                  placeholder="0000"
+                />
+              </div>
+              {/* credit limit */}
+
+              <div className="m-3">
+                <button
+                  type="submit"
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-md"
                 >
-                  Islam MD S
-                </th>
-                <td className="px-6 py-4">Product #</td>
-                <td className="px-6 py-4">02 February, 2024</td>
-                <td className="px-6 py-4">৳ 10,000</td>
-              </tr>
-              <tr className="bg-white border-b-800-700">
-                <th
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                >
-                  Khodejs Begum
-                </th>
-                <td className="px-6 py-4">Product #</td>
-                <td className="px-6 py-4">01 February, 2024</td>
-                <td className="px-6 py-4">৳ 10,000</td>
-              </tr>
-              <tr className="bg-white">
-                <th
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                >
-                  Mateo Evelyn J
-                </th>
-                <td className="px-6 py-4">Product #</td>
-                <td className="px-6 py-4">03 February, 2024</td>
-                <td className="px-6 py-4">৳ 8,000</td>
-              </tr>
-              <tr className="bg-white">
-                <th
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
-                >
-                  Blake Down
-                </th>
-                <td className="px-6 py-4">Product #</td>
-                <td className="px-6 py-4">03 February, 2024</td>
-                <td className="px-6 py-4">৳ 4,000</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  Submit
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+        <Table />
       </div>
     </div>
   );

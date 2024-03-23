@@ -20,12 +20,13 @@ const LoginForm = ({ onLoginSuccess }: Props) => {
 
   const [signinResult, signin] = useMutation(LOGIN_MUTATION);
   
+
+  console.info(signinResult)
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (email && password) {
       try {
         const result = await signin({ signininput: { email, password } });
-        console.info(result.error);
         if (!result.error && result.data && result.data.signin) {
           onLoginSuccess(result.data.signin);
         }
